@@ -2,16 +2,21 @@ import os
 import telebot
 from flask import Flask, request
 
-# Token va atrof-muhit o'zgaruvchilari
 TOKEN = os.environ.get("TOKEN")
 ADMIN_PHONE = "+998 99 434 10 00"
-
-# Render serveringiz manzili (masalan: https://avtoraqam-bot.onrender.com)
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
+# Webhook'ni darhol biriktirish
+if WEBHOOK_URL:
+    try:
+        bot.remove_webhook()
+        bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
+        print(f"Webhook o'rnatildi: {WEBHOOK_URL}/webhook")
+    except Exception as e:
+        print(f"Webhook o'rnatishda xatolik: {e}")
 
 @bot.message_handler(commands=["start"])
 def start(message):
@@ -27,11 +32,9 @@ ma'lumot olish uchun admin bilan bog'laning:
 """
     bot.send_message(message.chat.id, text)
 
-
 @app.route("/", methods=["GET"])
 def home():
     return "Avtoraqam Andijon Bot ishlayapti!", 200
-
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -41,13 +44,6 @@ def webhook():
         bot.process_new_updates([update])
         return "OK", 200
     return "Forbidden", 403
-
-
-# Server ishga tushganda Webhook'ni Telegram'ga avtomatik biriktirish
-if WEBHOOK_URL:
-    bot.remove_webhook()
-    bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
