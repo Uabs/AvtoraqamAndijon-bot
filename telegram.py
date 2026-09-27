@@ -2,22 +2,12 @@ import os
 import telebot
 from flask import Flask, request
 
-
 TOKEN = os.environ.get("TOKEN")
 ADMIN_PHONE = "+998 99 434 10 00"
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
-
-# Webhook'ni darhol biriktirish
-if WEBHOOK_URL:
-    try:
-        bot.remove_webhook()
-        bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
-        print(f"Webhook o'rnatildi: {WEBHOOK_URL}/webhook")
-    except Exception as e:
-        print(f"Webhook o'rnatishda xatolik: {e}")
 
 @bot.message_handler(commands=["start"])
 def start(message):
@@ -36,6 +26,18 @@ ma'lumot olish uchun admin bilan bog'laning:
 @app.route("/", methods=["GET"])
 def home():
     return "Avtoraqam Andijon Bot ishlayapti!", 200
+
+# Webhook'ni ulash uchun maxsus manzil
+@app.route("/set_webhook", methods=["GET"])
+def set_webhook_route():
+    if WEBHOOK_URL:
+        clean_url = WEBHOOK_URL.rstrip('/')
+        bot.remove_webhook()
+        success = bot.set_webhook(url=f"{clean_url}/webhook")
+        if success:
+            return f"Webhook muvaffaqiyatli o'rnatildi: {clean_url}/webhook", 200
+        return "Webhook o'rnatishda xatolik yuz berdi", 500
+    return "WEBHOOK_URL sozlamalarda topilmadi!", 400
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
